@@ -21,3 +21,6 @@ clean: libclean
 	rm -rf benchmarks/
 
 .SECONDARY:
+
+.PHONY: test-print-keys
+test-print-keys: elf/test_print_keys.elf bin/test_print_keys.hex

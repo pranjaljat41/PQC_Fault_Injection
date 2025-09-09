@@ -27,3 +27,36 @@ endif
 
 tests: elf/boardtest.elf elf/aestest.elf elf/keccaktest.elf
 tests-bin: bin/boardtest.bin bin/aestest.bin bin/keccaktest.bin
+
+# Custom test to print KEM values
+TEST_PRINT_KEYS_C_SOURCES = \
+    test_print_keys.c \
+    crypto_kem/ml-kem-768/m4fspeed/cbd.c \
+    crypto_kem/ml-kem-768/m4fspeed/indcpa.c \
+    crypto_kem/ml-kem-768/m4fspeed/kem.c \
+    crypto_kem/ml-kem-768/m4fspeed/matacc.c \
+    crypto_kem/ml-kem-768/m4fspeed/ntt.c \
+    crypto_kem/ml-kem-768/m4fspeed/poly.c \
+    crypto_kem/ml-kem-768/m4fspeed/polyvec.c \
+    crypto_kem/ml-kem-768/m4fspeed/symmetric-fips202.c \
+    crypto_kem/ml-kem-768/m4fspeed/verify.c \
+    mupq/common/fips202.c \
+    common/hal-opencm3.c \
+    common/randombytes.c
+
+TEST_PRINT_KEYS_S_SOURCES = \
+    crypto_kem/ml-kem-768/m4fspeed/cmov_int16.S \
+    crypto_kem/ml-kem-768/m4fspeed/fastaddsub.S \
+    crypto_kem/ml-kem-768/m4fspeed/fastbasemul.S \
+    crypto_kem/ml-kem-768/m4fspeed/fastinvntt.S \
+    crypto_kem/ml-kem-768/m4fspeed/fastntt.S \
+    crypto_kem/ml-kem-768/m4fspeed/matacc_asm.S \
+    crypto_kem/ml-kem-768/m4fspeed/poly_asm.S \
+    crypto_kem/ml-kem-768/m4fspeed/reduce.S \
+    common/keccakf1600.S
+
+TEST_PRINT_KEYS_OBJS = $(call objs,$(TEST_PRINT_KEYS_C_SOURCES)) $(call objs,$(TEST_PRINT_KEYS_S_SOURCES))
+
+elf/test_print_keys.elf: $(TEST_PRINT_KEYS_OBJS) $(LINKDEPS) $(CONFIG)
+
+$(TEST_PRINT_KEYS_OBJS): CFLAGS += -Icrypto_kem/ml-kem-768/m4fspeed -Imupq/common
