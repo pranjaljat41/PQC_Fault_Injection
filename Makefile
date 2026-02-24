@@ -24,3 +24,12 @@ clean: libclean
 
 .PHONY: test-print-keys
 test-print-keys: elf/test_print_keys.elf bin/test_print_keys.hex
+
+.PHONY: test-glitch
+test-glitch: elf/test_glitch.elf bin/test_glitch.hex
+
+.PHONY: test-sanity
+test-sanity: elf/test_sanity.elf bin/test_sanity.hex
+
+.PHONY: test-sanity
+test-sanity: elf/test_sanity.elf bin/test_sanity.hex

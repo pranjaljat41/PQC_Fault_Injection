@@ -1,0 +1,5 @@
+\beamer@sectionintoc {1}{Introduction to Fault Injection}{3}{0}{1}
+\beamer@sectionintoc {2}{Kyber: Post-Quantum Cryptography}{7}{0}{2}
+\beamer@sectionintoc {3}{Attack Methodology}{8}{0}{3}
+\beamer@sectionintoc {4}{Implementation Details}{10}{0}{4}
+\beamer@sectionintoc {5}{Challenges \& Current State}{11}{0}{5}

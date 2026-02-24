@@ -1,0 +1,18 @@
+\section{Overview}
+Kyber is a post-quantum cryptographic algorithm selected by NIST for standardization. It belongs to the family of lattice-based cryptography and is designed to be secure against attacks from both classical and quantum computers. However, like many cryptographic implementations, it can be vulnerable to physical implementation attacks, such as Fault Injection Analysis (FIA).
+
+This documentation details a successful instruction skip attack performed on the Kyber768 decapsulation process running on an STM32F303 microcontroller. The objective of the attack was to bypass the implicit rejection mechanism, which is critical for the security of the Key Encapsulation Mechanism (KEM).
+
+\section{The Attack Target}
+The specific target of this attack is the \texttt{cmov} (conditional move) function within the \texttt{verify.c} file of the \texttt{pqm4} library. In the standard implementation, if the decapsulated shared secret is invalid (i.e., the ciphertext was modified), the system overwrites the shared secret with a pseudo-random rejection key to prevent information leakage.
+
+By injecting a precise clock glitch during the execution of the \texttt{cmov} function, we aimed to skip the instruction responsible for the conditional overwrite logic. This allows the device to return the "true" shared secret derived from the invalid ciphertext, effectively bypassing the integrity check.
+
+\section{Objective}
+The primary goals of this project were:
+\begin{itemize}
+    \item To set up a working environment for Fault Injection on the STM32F303 platform using ChipWhisperer.
+    \item To modify the \texttt{pqm4} implementation to create a specific vulnerability window for the attack.
+    \item To develop a Python script capable of synchronizing with the target and injecting glitches with high precision.
+    \item To demonstrate a successful bypass of the rejection mechanism by recovering the "true" shared secret from an invalid ciphertext.
+\end{itemize}

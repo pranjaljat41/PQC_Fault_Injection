@@ -1,0 +1,19 @@
+\section{Overview}
+Fault injection attacks are inherently challenging due to their sensitivity to environmental conditions and precise timing requirements. Several significant hurdles were overcome during this project.
+
+\section{Challenges}
+
+\subsection{Synchronization Stability}
+Maintaining stable synchronization between the ChipWhisperer and the target device was difficult. Initially, trigger signals were inconsistent, leading to glitches being injected at the wrong time. This was mitigated by placing \texttt{hal\_trigger\_toggle()} calls as close as possible to the target instruction and refining the trigger delay settings.
+
+\subsection{Parameter Space Exploration}
+The search space for glitch parameters (width, offset, ext\_offset) is vast. A brute-force search is time-consuming and often fruitless. We adopted a guided search strategy, starting with a coarse sweep to find "interesting" behavior (crashes or resets) and then refining the search around those points.
+
+\subsection{Target Reset Handling}
+When a glitch causes a crash, the target must be reset cleanly to continue the attack. We implemented a robust reset mechanism in the Python script that monitors the serial output for a specific "WAIT" signal after reset, ensuring the target is ready before the next attempt.
+
+\subsection{Device Variance}
+Clock glitching can yield different results on different physical devices or even the same device under different temperature conditions. The parameters found to be successful (ext\_offset 20, width 4.1) were specific to our setup and conditions. A slight deviation in temperature or voltage could shift the optimal window.
+
+\subsection{Unstable Compiles}
+We observed that different compiler optimization levels (-O3, -Os) could change the generated assembly instructions for `cmov`, sometimes making the vulnerable instruction disappear or move. We verified the assembly output to ensure `b = -b` (or equivalent `RSB`/`NEG` instruction) was present and targetable.

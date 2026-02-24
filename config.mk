@@ -1,0 +1,1 @@
+PLATFORM=cw308t-stm32f3

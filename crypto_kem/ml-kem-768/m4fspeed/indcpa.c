@@ -1,4 +1,6 @@
 #include "indcpa.h"
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
 #include "ntt.h"
 #include "poly.h"
 #include "polyvec.h"

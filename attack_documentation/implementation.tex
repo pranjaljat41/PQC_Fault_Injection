@@ -1,0 +1,71 @@
+\section{Overview}
+The default implementation of Kyber in \texttt{pqm4} is designed to be resitant to fault injection attacks. To create a controlled environment for testing and developing the attack, we introduced specific modifications to the codebase. These changes were made primarily in \texttt{crypto\_kem/ml-kem-768/m4fspeed/kem.c} and \texttt{crypto\_kem/ml-kem-768/m4fspeed/verify.c}.
+
+\section{Modifications in `kem.c`}
+The core vulnerability was introduced by modifying the decapsulation logic to use a "default-to-true" pattern. In a secure implementation, the shared secret should only be copied if the validation succeeds. We modified this to first copy the true shared secret, and then overwrite it with a rejection key if validation fails.
+
+This creates a race condition: if we can skip the overwrite instruction, the device will return the valid shared secret even for an invalid ciphertext.
+
+\subsection{Code Snippet}
+The critical section in \texttt{crypto\_kem\_dec} function was modified as follows:
+
+\begin{lstlisting}[language=C]
+    /* Vulnerable Pattern: Default to True Key, overwrite if fail */
+    memcpy(ss, kr, KYBER_SYMBYTES);
+
+    /* Overwrite with rejection key if fail is true */
+    hal_trigger_toggle();
+    cmov(ss, rejection_key, KYBER_SYMBYTES, fail);
+    hal_trigger_toggle();
+\end{lstlisting}
+
+We also added \texttt{hal\_trigger\_toggle()} calls around the \texttt{cmov} function. These triggers allow us to synchronize the ChipWhisperer glitch with the exact execution window of the target instruction.
+
+\section{Modifications in `verify.c` (Target Instruction)}
+The \texttt{cmov} function handles the conditional move. We targeted the specific instruction responsible for negating the condition flag \texttt{b}.
+
+\begin{lstlisting}[language=C]
+void cmov(unsigned char *r, const unsigned char *x, size_t len, unsigned char b) {
+    size_t i;
+
+    b = -b;  // <-- This instruction is the GLITCH TARGET
+    for (i = 0; i < len; i++) {
+        r[i] ^= b & (x[i] ^ r[i]);
+    }
+}
+\end{lstlisting}
+
+
+\section{Build System Modifications}
+To facilitate the creation of the specific test firmware, we modified the build system by adding a new configuration file \texttt{mk/tests.mk}. This file defines the \texttt{test-glitch} target and lists all necessary source files, including the hardware abstraction layer and the Kyber implementation files.
+
+\begin{lstlisting}[language=make]
+# Custom test for glitch attack
+TEST_GLITCH_C_SOURCES = \
+    test_glitch.c \
+    crypto_kem/ml-kem-768/m4fspeed/cbd.c \
+    ...
+    common/hal-opencm3.c \
+    common/randombytes.c
+
+elf/test_glitch.elf: $(TEST_GLITCH_OBJS) $(LINKDEPS) $(CONFIG)
+\end{lstlisting}
+
+This allows us to compile the attack firmware using the standard \texttt{make} command:
+\texttt{make PLATFORM=cw308t-stm32f3 test-glitch}.
+
+\section{Deterministic Randomness}
+For a controlled fault injection experiment, it is essential that the device behaves deterministically. Standard Kyber implementations use a hardware random number generator (TRNG) or a seeded PRNG to generate ephemeral keys and noise.
+
+We modified \texttt{common/randombytes.c} to use a \textbf{fixed seed} derived from the digits of $\pi$. This ensures that every execution of the key generation and encapsulation process produces the exact same "random" values, allowing us to:
+\begin{enumerate}
+    \item Knowing the "Gold" (correct) keys in advance.
+    \item Reliably reproduce the exact same state for every glitch attempt.
+    \item Differentiate between a successful glitch (returning the Gold key) and a device reset or random failure.
+\end{enumerate}
+
+\begin{lstlisting}[language=C]
+// Fixed seed for deterministic execution (Pi digits)
+static uint32_t seed[32] = {2, 1, 4, 1, 5, 9, ...};
+\end{lstlisting}
+

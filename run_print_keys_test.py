@@ -1,3 +1,4 @@
+import chipwhisperer as cw
 from mupq import platforms
 import time
 

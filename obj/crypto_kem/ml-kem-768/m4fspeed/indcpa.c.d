@@ -1,0 +1,22 @@
+obj/crypto_kem/ml-kem-768/m4fspeed/indcpa.c.o: \
+ crypto_kem/ml-kem-768/m4fspeed/indcpa.c \
+ crypto_kem/ml-kem-768/m4fspeed/indcpa.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/stm32/rcc.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/cm3/common.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/stm32/memorymap.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/stm32/f3/memorymap.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/cm3/memorymap.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/stm32/f3/rcc.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/stm32/common/rcc_common_all.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/stm32/gpio.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/stm32/f3/gpio.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/stm32/common/gpio_common_f234.h \
+ /home/pranjal-jat/pqm4/libopencm3/include/libopencm3/stm32/common/gpio_common_all.h \
+ crypto_kem/ml-kem-768/m4fspeed/ntt.h \
+ crypto_kem/ml-kem-768/m4fspeed/poly.h \
+ crypto_kem/ml-kem-768/m4fspeed/params.h \
+ crypto_kem/ml-kem-768/m4fspeed/polyvec.h \
+ /home/pranjal-jat/pqm4/mupq/common/randombytes.h \
+ crypto_kem/ml-kem-768/m4fspeed/symmetric.h \
+ /home/pranjal-jat/pqm4/mupq/common/fips202.h \
+ crypto_kem/ml-kem-768/m4fspeed/matacc.h

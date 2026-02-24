@@ -1,0 +1,200 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+
+\title{Fault Injection Attack on Kyber768}
+\subtitle{Clock Glitching and Instruction Skipping}
+\author{Pranjal Jat}
+\date{\today}
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+    \tableofcontents
+\end{frame}
+
+\section{Introduction to Fault Injection}
+\begin{frame}{What is Fault Injection?}
+    \begin{itemize}
+        \item \textbf{Defintion}: Intentionally introducing errors into a system to alter its intended behavior.
+        \item \textbf{Purpose}: 
+            \begin{itemize}
+                \item Evaluate system robustness (Safety).
+                \item Bypass security mechanisms (Security).
+            \end{itemize}
+        \item \textbf{Classification of Attacks}:
+            \begin{enumerate}
+                \item \textbf{Invasive}: Direct physical modification (e.g., FIB, probing silicon). Expensive, requires decapsulation.
+                \item \textbf{Semi-Invasive}: Access to chip surface but no depackaging (e.g., Optical Fault Injection/Lasers).
+                \item \textbf{Non-Invasive}: Manipulating accessible environmental parameters (e.g., \textbf{Clock}, \textbf{Voltage}, EM, Temperature). Low cost, scalable.
+            \end{enumerate}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Mechanics of Glitching}
+    \begin{block}{The Core Principle: Timing Violations}
+    Digital circuits rely on strict timing constraints:
+    \begin{itemize}
+        \item \textbf{Setup Time}: Data must be stable \textit{before} the clock edge.
+        \item \textbf{Hold Time}: Data must remain stable \textit{after} the clock edge.
+        \item \textbf{Propagation Delay}: Time taken for signals to travel through logic gates.
+    \end{itemize}
+    \textit{Glitching aims to violate these constraints, causing the CPU to latch incorrect values or execute instructions incorrectly.}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Clock vs. Voltage Glitching}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Clock Glitching}
+        \begin{itemize}
+            \item \textbf{Method}: Temporarily shortening the clock period (higher frequency).
+            \item \textbf{Effect}: The critical path logic cannot finish computation before the next clock edge arrives.
+            \item \textbf{Result}: Setup time violation $\rightarrow$ Latching intermediate/wrong state.
+            \item \textit{Precise, often single-cycle resolution.}
+        \end{itemize}
+
+        \column{0.5\textwidth}
+        \textbf{Voltage Glitching}
+        \begin{itemize}
+            \item \textbf{Method}: Rapidly dropping the supply voltage (VCC).
+            \item \textbf{Effect}: Lower voltage increases the \textbf{propagation delay} of transistors.
+            \item \textbf{Result}: Logic is too slow for the standard clock speed $\rightarrow$ Setup time violation.
+            \item \textit{Global effect, affects entire chip path.}
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Common Fault Models}
+    \begin{itemize}
+        \item \textbf{Instruction Skip}: preventing an instruction from executing (effectively turning it into a \texttt{NOP}).
+        \item \textbf{Instruction Corruption}: transforming one instruction into another (e.g., \texttt{ADD} becomes \texttt{SUB}).
+        \item \textbf{Register/Memory Corruption}: flipping bits in data storage.
+        \item \textbf{Control Flow Hijacking}: manipulating branch tests to take the wrong path.
+    \end{itemize}
+\end{frame}
+
+\section{Kyber: Post-Quantum Cryptography}
+\begin{frame}{Kyber Overview}
+    \begin{itemize}
+        \item \textbf{Kyber}: A lattice-based Key Encapsulation Mechanism (KEM).
+        \item Selected by NIST as the primary Post-Quantum Cryptography (PQC) standard (ML-KEM).
+        \item \textbf{Security}: Based on the hardness of the Module-LWE (Learning With Errors) problem.
+        \item \textbf{Decapsulation Process}:
+            \begin{enumerate}
+                \item Decrypt ciphertext to get message $m'$.
+                \item Re-encrypt $m'$ to get $c'$.
+                \item \textbf{Implicit Rejection}: Check if received ciphertext $c == c'$.
+                \item If equal: Return $K = \text{KDF}(m', \dots)$.
+                \item If not equal: Return $K = \text{KDF}(\sigma, \dots)$ (Random).
+            \end{enumerate}
+    \end{itemize}
+\end{frame}
+
+\section{Attack Methodology}
+\begin{frame}{The Target: Instruction Skip}
+    \begin{itemize}
+        \item \textbf{Objective}: Force the device to skip the check (or the result of the check) that validates the ciphertext.
+        \item \textbf{Target Instruction}: \texttt{negs} (ARM assembly: conditional negation).
+        \item \textbf{Mechanism}:
+            \begin{itemize}
+                \item In constant-time implementations (like pqm4), branching is avoided.
+                \item Conditional moves (\texttt{cmov}) or arithmetic operations (\texttt{negs}) are used to select the final key.
+                \item If we skip \texttt{negs} or effect the \texttt{cmov}, we can force the device to output the "True" key even when the ciphertext is invalid.
+            \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Clock Glitching Strategy}
+    \begin{itemize}
+        \item \textbf{Setup}: ChipWhisperer Lite + STM32F3 (running pqm4).
+        \item \textbf{Approach}:
+            \begin{enumerate}
+                \item \textbf{Profiling}: Used CPA (Correlation Power Analysis) to identify the exact cycle of the comparison operation (approx. cycle 22 relative to trigger).
+                \item \textbf{Glitching}: Drive the target clock with \texttt{clock\_xor} glitch.
+                \item \textbf{Parameters}:
+                    \begin{itemize}
+                        \item \textbf{Ext Offset}: Cycle count to wait before glitching.
+                        \item \textbf{Width}: Duration of the glitch pulse (4.0\% - 8.0\%).
+                        \item \textbf{Offset}: Phase shift to target specific edge.
+                    \end{itemize}
+            \end{enumerate}
+    \end{itemize}
+\end{frame}
+
+\section{Implementation Details}
+\begin{frame}{Implementation Logic}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Firmware (\texttt{test\_glitch.c})}:
+        \begin{itemize}
+            \item Generate Keypair ($pk, sk$).
+            \item Create valid $ct$.
+            \item \textbf{Corrupt} $ct$ (flip last byte).
+            \item Loop: Decapsulate($sk, ct_{corrupt}$).
+            \item Normal Result: Random Key.
+            \item \textbf{Success}: Gold Key (Check Bypassed).
+        \end{itemize}
+
+        \column{0.5\textwidth}
+        \textbf{Attack Script (\texttt{attack\_negs.py})}:
+        \begin{itemize}
+            \item Reset Target.
+            \item Wait for "WAIT" signal.
+            \item Insert Glitch at parameterized time.
+            \item Read Output Key.
+            \item Compare with Gold Key.
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\section{Challenges \& Current State}
+\begin{frame}{Challenges Faced}
+    \begin{itemize}
+        \item \textbf{Timing Precision}: Finding the Single Instruction among millions of cycles.
+            \begin{itemize}
+                \item \textit{Solution}: 24 MHz CPA analysis narrowed search window to $\sim$cycle 22.
+            \end{itemize}
+        \item \textbf{State Corruption ("Different" Keys)}:
+            \begin{itemize}
+                \item Glitches often corrupt the calculation rather than skipping the instruction cleanly.
+                \item Result: 1000s of keys that are neither "Gold" nor "Random" -> Just noise.
+            \end{itemize}
+        \item \textbf{Stability}:
+            \begin{itemize}
+                \item Target device hangs/crashes frequently.
+            \end{itemize}
+        \item \textbf{Randomness}:
+            \begin{itemize}
+                \item Need deterministic PRNG (`randombytes.c`) to verify results against a known "Gold" secret.
+            \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Current State}
+    \begin{itemize}
+        \item \textbf{Status}: Active Refinement.
+        \item Successfully identified the sensitive timing window (Cycle 20-25).
+        \item \textbf{Observation}: 
+            \begin{itemize}
+                \item Key matches Gold Key on upper bits, but LSBs are corrupted.
+                \item Indicates we are hitting the right operation but timing/width needs fine-tuning.
+            \end{itemize}
+        \item \textbf{Next Steps}:
+            \begin{itemize}
+                \item Finer sweep of Phase Offset.
+            \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \centering
+    \Huge Thank You
+\end{frame}
+
+\end{document}

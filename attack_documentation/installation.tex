@@ -1,0 +1,44 @@
+\section{Prerequisites}
+Before starting, ensure that the following hardware and software components are available:
+
+\subsection{Hardware}
+\begin{itemize}
+    \item \textbf{ChipWhisperer Lite (CW1173)}: The consolidated fault injection hardware and target platform.
+    \item \textbf{STM32F303 Target}: The microcontroller (integrated on the Lite board) running the Kyber implementation.
+\end{itemize}
+
+\subsection{Software}
+\begin{itemize}
+    \item \textbf{ARM Toolchain}: \texttt{arm-none-eabi-gcc} for compiling the firmware.
+    \item \textbf{Python 3}: For running attack scripts.
+    \item \textbf{ChipWhisperer Software}: Python library for controlling the hardware.
+\end{itemize}
+
+\section{Installation Steps}
+
+\subsection{1. Clone the Repository}
+The base library used is \texttt{pqm4}, which contains post-quantum cryptography schemes for the Cortex-M4.
+
+\begin{lstlisting}[language=bash]
+git clone https://github.com/mupq/pqm4.git
+cd pqm4
+git submodule update --init --recursive
+\end{lstlisting}
+
+\subsection{2. Install Python Dependencies}
+Install the required Python packages, including the ChipWhisperer library.
+
+\begin{lstlisting}[language=bash]
+pip install -r requirements.txt
+\end{lstlisting}
+
+\subsection{3. Compile the Firmware}
+We created a specific test firmware \texttt{test\_glitch} to facilitate the attack. This firmware generates a keypair, creates an invalid ciphertext, and then enters an infinite loop of decapsulation attempts.
+
+To compile the firmware for the STM32F3 platform:
+
+\begin{lstlisting}[language=bash]
+make PLATFORM=cw308t-stm32f3 test-glitch
+\end{lstlisting}
+
+This command generates the binary file \texttt{bin/test\_glitch.hex}, which can be flashed onto the target device.

@@ -140,10 +140,12 @@ static void clock_setup(enum clock_mode clock)
   rcc_osc_on(RCC_HSE);
   rcc_wait_for_osc_ready(RCC_HSE);
 
-  rcc_ahb_frequency = 7372800;
-  rcc_apb1_frequency = 7372800;
-  rcc_apb2_frequency = 7372800;
-  _clock_freq = 7372800;
+  rcc_wait_for_osc_ready(RCC_HSE);
+
+  rcc_ahb_frequency = 24000000;
+  rcc_apb1_frequency = 24000000;
+  rcc_apb2_frequency = 24000000;
+  _clock_freq = 24000000;
   rcc_set_hpre(RCC_CFGR_HPRE_DIV_NONE);
 # if defined(STM32F3)
   rcc_set_ppre1(RCC_CFGR_PPRE1_DIV_NONE);
@@ -161,7 +163,7 @@ static void clock_setup(enum clock_mode clock)
   rcc_osc_on(RCC_HSI);
   rcc_wait_for_osc_ready(RCC_HSI);
   rcc_osc_off(RCC_PLL);
-  rcc_set_main_pll_hse(12, 196, 4, 7, 0);
+  rcc_set_main_pll_hse(8, 192, 8, 4, 0);
   
   rcc_osc_on(RCC_PLL);
   rcc_wait_for_osc_ready(RCC_PLL);
@@ -346,11 +348,22 @@ void systick_setup()
   systick_interrupt_enable();
   systick_counter_enable();
 }
+
+void trigger_setup(void)
+{
+#if defined(STM32F303RCT7) || defined(STM32F415RGT6)
+    rcc_periph_clock_enable(RCC_GPIOA);
+    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO12);
+    gpio_clear(GPIOA, GPIO12);
+#endif
+}
+
 static volatile unsigned long long overflowcnt = 0;
 void hal_setup(const enum clock_mode clock)
 {
   clock_setup(clock);
   usart_setup();
+  trigger_setup();
   systick_setup();
 
   // wait for the first systick overflow
@@ -368,6 +381,13 @@ void hal_send_str(const char* in)
     cur += 1;
   }
   usart_send_blocking(SERIAL_USART, '\n');
+}
+
+void hal_trigger_toggle(void)
+{
+#if defined(STM32F303RCT7) || defined(STM32F415RGT6)
+    gpio_toggle(GPIOA, GPIO12);
+#endif
 }
 
 void sys_tick_handler(void)
@@ -518,4 +538,9 @@ int __wrap__write(int fd, const char* ptr, int len)
   (void) len;
   errno = ENOSYS;
 	return -1;
+}
+
+char hal_get_char(void)
+{
+  return (char)usart_recv_blocking(SERIAL_USART);
 }

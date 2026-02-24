@@ -1,0 +1,92 @@
+\section{Attack Script}
+The attack was orchestrated using a Python script, \texttt{attack\_negs.py}, which interfaces with the ChipWhisperer hardware. The script performs the following steps:
+\begin{enumerate}
+    \item \textbf{Synchronization}: It resets the target and waits for a specific trigger signal from the \texttt{hal\_trigger\_toggle()} call.
+    \item \textbf{Glitch Injection}: It inserts a clock glitch at a precise offset relative to the trigger.
+    \item \textbf{Key Verification}: It reads the output shared secret and compares it against the known "Gold" (correct) key and the "Baseline" (rejection) key.
+\end{enumerate}
+
+\section{Code Implementation}
+The core logic of the attack is implemented in Python. Below is a breakdown of the key functions.
+
+\subsection{Hardware Setup}
+The \texttt{setup()} function initializes the ChipWhisperer scope and target. We configure the clock generation to 24 MHz and enable the "clock\_xor" glitch output, which allows us to insert glitches into the target's clock line.
+
+\begin{lstlisting}[language=Python]
+def setup(args):
+    # ...
+    scope.clock.clkgen_freq = 24000000
+    scope.glitch.output = "clock_xor"  # Clock glitch logic
+    scope.glitch.trigger_src = "ext_single"
+    scope.glitch.repeat = 1
+    # ...
+\end{lstlisting}
+
+\subsection{Target Reset Logic}
+To ensure a clean state for every attempt, we implemented a robust reset function. This toggles the NRST line and waits for a "WAIT" message from the firmware, confirming it has rebooted and is ready for the next command.
+
+\begin{lstlisting}[language=Python]
+def reset(scope, target):
+    scope.io.nrst = 'low'
+    time.sleep(0.1)
+    scope.io.nrst = 'high'
+    # ...
+    while time.time() - t < 1.0:
+        if "WAIT" in buff:
+            return True, buff
+    return False, buff
+\end{lstlisting}
+
+\subsection{The Glitch Loop}
+The \texttt{glitch()} function executes a single attack attempt. It sets the glitch width and offset, arms the scope, and waits for the trigger. It then reads the output key from the serial port.
+
+\begin{lstlisting}[language=Python]
+def glitch(scope, target, target_key, baseline_key, width, offset):
+    scope.glitch.width = width
+    scope.glitch.offset = offset
+    
+    scope.arm()
+    # ... capture trace ...
+    
+    if target_key in response:
+        return "SUCCESS", trace, target_key
+    elif baseline_key in response:
+        return "normal", None, baseline_key
+\end{lstlisting}
+
+\subsection{Checking "Dirty" Matches}
+A unique feature of our script is the detection of "Dirty" keys. These keys match the Gold key in the high bits but have corrupted low bits. This indicates that the glitch successfully affected the target instruction but may have introduced additional noise.
+
+\begin{lstlisting}[language=Python]
+def check_dirty_match(key_hex, gold_hex):
+    # Check if key matches gold on top 7 bits of every byte
+    for i in range(len(k)):
+        if (k[i] & 0xFE) != (g[i] & 0xFE):
+             return False # Mismatch in high bits
+    return True # Likely a partial success
+\end{lstlisting}
+
+\section{Glitch Parameters}
+The success of the attack depends on three critical parameters:
+\begin{itemize}
+    \item \textbf{Ext Offset}: The delay in clock cycles from the trigger signal to the glitch insertion point.
+    \item \textbf{Width}: The duration of the glitch pulse, expressed as a percentage of the clock period.
+    \item \textbf{Offset}: The phase shift of the glitch pulse relative to the clock edge.
+\end{itemize}
+
+\section{Success Criteria}
+The attack is considered successful if the returned shared secret matches the "Gold" key, even though the input ciphertext was invalid. This proves that the rejection mechanism (overwriting with a random key) was bypassed.
+
+\subsection{Parameter Scan Results}
+We performed an extensive parameter sweep to find the vulnerability window. The successful parameters were identified as:
+
+\begin{itemize}
+    \item \textbf{Ext Offset}: 20 clock cycles
+    \item \textbf{Width}: $\approx$ 4.1\% of clock period
+    \item \textbf{Offset}: $\approx$ 4.5\% of clock period
+\end{itemize}
+
+At these settings, the instruction skip occurred reliably, allowing us to recover the true shared secret.
+
+\section{Partial Skips and "Dirty" Keys}
+During the tuning process, we observed "Dirty" keys. These are keys where the high bits matched the Gold key, but lower bits were corrupted. This indicates a partial success where the instruction was affected but not cleanly skipped, or where the glitch affected the data bus partially. These results helped guide the search toward the optimal parameters.

@@ -1,0 +1,42 @@
+\contentsline {chapter}{\numberline {1}Introduction}{3}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Overview}{3}{section.1.1}%
+\contentsline {section}{\numberline {1.2}The Attack Target}{3}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Objective}{3}{section.1.3}%
+\contentsline {chapter}{\numberline {2}Environment Setup \& Installation}{5}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Prerequisites}{5}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Hardware}{5}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}Software}{5}{subsection.2.1.2}%
+\contentsline {section}{\numberline {2.2}Installation Steps}{5}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}1. Clone the Repository}{5}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}2. Install Python Dependencies}{5}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}3. Compile the Firmware}{6}{subsection.2.2.3}%
+\contentsline {chapter}{\numberline {3}Implementation Changes}{7}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Overview}{7}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Modifications in `kem.c`}{7}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Code Snippet}{7}{subsection.3.2.1}%
+\contentsline {section}{\numberline {3.3}Modifications in `verify.c` (Target Instruction)}{7}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Build System Modifications}{8}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Deterministic Randomness}{8}{section.3.5}%
+\contentsline {chapter}{\numberline {4}Attack Methodology}{9}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Attack Script}{9}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Code Implementation}{9}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Hardware Setup}{9}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Target Reset Logic}{9}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}The Glitch Loop}{10}{subsection.4.2.3}%
+\contentsline {subsection}{\numberline {4.2.4}Checking "Dirty" Matches}{10}{subsection.4.2.4}%
+\contentsline {section}{\numberline {4.3}Glitch Parameters}{10}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Success Criteria}{11}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Parameter Scan Results}{11}{subsection.4.4.1}%
+\contentsline {section}{\numberline {4.5}Partial Skips and "Dirty" Keys}{11}{section.4.5}%
+\contentsline {chapter}{\numberline {5}Challenges Faced}{12}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Overview}{12}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Challenges}{12}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Synchronization Stability}{12}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}Parameter Space Exploration}{12}{subsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.2.3}Target Reset Handling}{12}{subsection.5.2.3}%
+\contentsline {subsection}{\numberline {5.2.4}Device Variance}{12}{subsection.5.2.4}%
+\contentsline {subsection}{\numberline {5.2.5}Unstable Compiles}{13}{subsection.5.2.5}%
+\contentsline {chapter}{\numberline {6}Conclusion}{14}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Summary}{14}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Key Findings}{14}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Future Work}{14}{section.6.3}%

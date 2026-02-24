@@ -1,0 +1,18 @@
+\section{Summary}
+In this project, we successfully demonstrated a fault injection attack on the Kyber768 KEM implementation. By targeting the conditional move operation during the decapsulation process, we were able to skip the instruction responsible for overwriting the shared secret with a rejection key.
+
+\section{Key Findings}
+\begin{itemize}
+    \item The "Default-to-True" implementation pattern, while conceptually simple, introduces a critical vulnerability window where the true secret exists in memory before being potentially overwritten.
+    \item Precise clock glitching is a viable attack vector against the STM32F303 platform running Kyber.
+    \item Successful parameters were identified at an external offset of 20 clock cycles with a glitch width of approximately 4.1\%.
+\end{itemize}
+
+\section{Future Work}
+Future research could explore:
+\begin{enumerate}
+    \item \textbf{Countermeasures}: Implementing hardware or software countermeasures to detect or prevent clock glitches, such as using random delays or redundant calculations.
+    \item \textbf{Other Platforms}: Testing the attack on different microcontrollers (e.g., STM32F4, RISC-V) to compare vulnerability.
+    \item \textbf{Voltage Glitching}: Investigating if voltage glitching offers a wider success window compared to clock glitching.
+    \item \textbf{Dilithium Analysis}: Extending the fault injection study to the Dilithium signature scheme to identify and exploit similar vulnerabilities.
+\end{enumerate}

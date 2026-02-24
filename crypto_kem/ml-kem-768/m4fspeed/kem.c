@@ -4,13 +4,12 @@
 #include "randombytes.h"
 #include "symmetric.h"
 #include "verify.h"
+#include "hal.h"
 
 #include <stdlib.h>
 
 #include <stdlib.h>
-
 #include <string.h>
-
 
 /*************************************************
 * Name:        crypto_kem_keypair_derand
@@ -24,7 +23,7 @@
 *                (an already allocated array of KYBER_SECRETKEYBYTES bytes)
 *              - uint8_t *coins: pointer to input randomness
 *                (an already allocated array filled with 2*KYBER_SYMBYTES random bytes)
-**
+*
 * Returns 0 (success)
 **************************************************/
 static int crypto_kem_keypair_derand(uint8_t *pk,
@@ -71,7 +70,7 @@ int crypto_kem_keypair(unsigned char *pk, unsigned char *sk) {
 *                (an already allocated array of KYBER_PUBLICKEYBYTES bytes)
 *              - const uint8_t *coins: pointer to input randomness
 *                (an already allocated array filled with KYBER_SYMBYTES random bytes)
-**
+*
 * Returns 0 (success)
 **************************************************/
 static int crypto_kem_enc_derand(uint8_t *ct,
@@ -150,10 +149,16 @@ int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned ch
     fail = indcpa_enc_cmp(ct, buf, pk, kr + KYBER_SYMBYTES);
 
     /* Compute rejection key */
-    rkprf(ss, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, ct);
+    uint8_t rejection_key[KYBER_SYMBYTES];
+    rkprf(rejection_key, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, ct);
 
-    /* Copy true key to return buffer if fail is false */
-    cmov(ss, kr, KYBER_SYMBYTES, (uint8_t) (1 - fail));
+    /* Vulnerable Pattern: Default to True Key, overwrite if fail */
+    memcpy(ss, kr, KYBER_SYMBYTES);
+
+    /* Overwrite with rejection key if fail is true */
+    hal_trigger_toggle();
+    cmov(ss, rejection_key, KYBER_SYMBYTES, fail);
+    hal_trigger_toggle();
 
     return 0;
 }
