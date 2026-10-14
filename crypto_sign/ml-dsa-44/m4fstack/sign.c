@@ -8,6 +8,7 @@
 #include "symmetric.h"
 #include "smallpoly.h"
 #include "stack.h"
+#include "hal.h"
 
 #include "smallntt.h"
 
@@ -137,6 +138,8 @@ int crypto_sign_signature_ctx(uint8_t *sig,
   uint16_t nonce = 0;
   uint8_t wcomp[K][768];
   uint8_t ccomp[68];
+  extern volatile uint8_t g_seed_byte;
+  int z_fail = 0, w0_fail = 0, ct0_fail = 0, h_fail = 0;
 
   union {
     shake128incctx s128;
@@ -178,7 +181,8 @@ int crypto_sign_signature_ctx(uint8_t *sig,
   shake256_inc_finalize(&state.s256);
   shake256_inc_squeeze(mu, CRHBYTES, &state.s256);
 
-  randombytes(rnd, RNDBYTES);
+  // randombytes(rnd, RNDBYTES); // Make deterministic for fault attack
+  for(int i=0; i<RNDBYTES; i++) rnd[i] = g_seed_byte;
 
   shake256_inc_init(&state.s256);
   shake256_inc_absorb(&state.s256, key, SEEDBYTES);
@@ -240,8 +244,12 @@ rej:
 
       poly_reduce(tmp0);
 
-      if(poly_chknorm(tmp0, GAMMA1 - BETA))
+      if(poly_chknorm(tmp0, GAMMA1 - BETA)){
+        if(nonce == 1) z_fail = 1;
+        hal_trigger_toggle();
+        __asm__ volatile("nop");
         goto rej;
+      }
 
       polyz_pack(sig + CTILDEBYTES + l_idx*POLYZ_PACKEDBYTES, tmp0);
   }
@@ -269,6 +277,9 @@ rej:
     poly_lowbits(tmp0, tmp0);
     poly_reduce(tmp0);
     if(poly_chknorm(tmp0, GAMMA2 - BETA)){
+      if(nonce == 1) w0_fail = 1;
+      hal_trigger_toggle();
+      __asm__ volatile("nop");
       goto rej;
     }
 
@@ -278,17 +289,56 @@ rej:
     /* Compute hints for w1 */
 
     if(poly_chknorm(tmp0, GAMMA2)) {
+      if(nonce == 1) ct0_fail = 1;
+      hal_trigger_toggle();
+      __asm__ volatile("nop");
       goto rej;
     }
 
     hint_n += poly_make_hint_stack(tmp0, tmp0, wcomp[k_idx]);
 
     if (hint_n > OMEGA) {
+      if(nonce == 1) h_fail = 1;
+      hal_trigger_toggle();
+      __asm__ volatile("nop");
       goto rej;
     }
     pack_sig_h(sig, tmp0, k_idx, &hints_written);
   }
   pack_sig_h_zero(sig, &hints_written);
+
+  // Print diagnostic string
+  hal_send_str("SEED=");
+  char dbuf[4];
+  uint8_t temp = g_seed_byte;
+  int idx = 0;
+  if(temp >= 100) { dbuf[idx++] = '0' + (temp / 100); temp %= 100; }
+  if(temp >= 10 || g_seed_byte >= 10) { dbuf[idx++] = '0' + (temp / 10); temp %= 10; }
+  dbuf[idx++] = '0' + temp;
+  dbuf[idx] = 0;
+  hal_send_str(dbuf);
+  
+  hal_send_str(z_fail ? " z=F" : " z=P");
+  hal_send_str(w0_fail ? " w0=F" : " w0=P");
+  hal_send_str(ct0_fail ? " ct0=F" : " ct0=P");
+  hal_send_str(h_fail ? " h=F" : " h=P");
+  
+  hal_send_str(" nonce=");
+  uint16_t ntemp = nonce;
+  idx = 0;
+  char nbuf[6];
+  if(ntemp == 0) {
+    nbuf[idx++] = '0';
+  } else {
+    char rev[6];
+    int ridx = 0;
+    while(ntemp > 0) { rev[ridx++] = '0' + (ntemp % 10); ntemp /= 10; }
+    while(ridx > 0) { nbuf[idx++] = rev[--ridx]; }
+  }
+  nbuf[idx++] = '\n';
+  nbuf[idx] = 0;
+  hal_send_str(nbuf);
+
   *siglen = CRYPTO_BYTES;
   return 0;
 }

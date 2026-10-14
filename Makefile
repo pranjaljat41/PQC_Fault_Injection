@@ -28,8 +28,14 @@ test-print-keys: elf/test_print_keys.elf bin/test_print_keys.hex
 .PHONY: test-glitch
 test-glitch: elf/test_glitch.elf bin/test_glitch.hex
 
+.PHONY: test-glitch-dilithium
+test-glitch-dilithium: elf/test_glitch_dilithium.elf bin/test_glitch_dilithium.hex
+
 .PHONY: test-sanity
 test-sanity: elf/test_sanity.elf bin/test_sanity.hex
+
+.PHONY: find_seed
+find_seed: elf/find_seed.elf bin/find_seed.hex
 
 .PHONY: test-sanity
 test-sanity: elf/test_sanity.elf bin/test_sanity.hex

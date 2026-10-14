@@ -94,6 +94,34 @@ elf/test_glitch.elf: $(TEST_GLITCH_OBJS) $(LINKDEPS) $(CONFIG)
 
 $(TEST_GLITCH_OBJS): CFLAGS += -Icrypto_kem/ml-kem-768/m4fspeed -Imupq/common
 
+# Custom test for glitch attack (Dilithium)
+TEST_GLITCH_DILITHIUM_C_SOURCES = \
+    test_glitch_dilithium.c \
+    crypto_sign/ml-dsa-44/m4fstack/packing.c \
+    crypto_sign/ml-dsa-44/m4fstack/poly.c \
+    crypto_sign/ml-dsa-44/m4fstack/polyvec.c \
+    crypto_sign/ml-dsa-44/m4fstack/rounding.c \
+    crypto_sign/ml-dsa-44/m4fstack/sign.c \
+    crypto_sign/ml-dsa-44/m4fstack/smallpoly.c \
+    crypto_sign/ml-dsa-44/m4fstack/stack.c \
+    crypto_sign/ml-dsa-44/m4fstack/symmetric-shake.c \
+    mupq/common/fips202.c \
+    common/hal-opencm3.c \
+    common/randombytes.c
+
+TEST_GLITCH_DILITHIUM_S_SOURCES = \
+    crypto_sign/ml-dsa-44/m4fstack/ntt.S \
+    crypto_sign/ml-dsa-44/m4fstack/smallntt_769.S \
+    crypto_sign/ml-dsa-44/m4fstack/pointwise_mont.s \
+    crypto_sign/ml-dsa-44/m4fstack/vector.s \
+    common/keccakf1600.S
+
+TEST_GLITCH_DILITHIUM_OBJS = $(call objs,$(TEST_GLITCH_DILITHIUM_C_SOURCES)) $(call objs,$(TEST_GLITCH_DILITHIUM_S_SOURCES))
+
+elf/test_glitch_dilithium.elf: $(TEST_GLITCH_DILITHIUM_OBJS) $(LINKDEPS) $(CONFIG)
+
+$(TEST_GLITCH_DILITHIUM_OBJS): CFLAGS += -Icrypto_sign/ml-dsa-44/m4fstack -Imupq/common
+
 # Custom test for sanity check
 TEST_SANITY_C_SOURCES = \
     test_sanity.c \
@@ -105,3 +133,31 @@ TEST_SANITY_OBJS = $(call objs,$(TEST_SANITY_C_SOURCES))
 elf/test_sanity.elf: $(TEST_SANITY_OBJS) $(LINKDEPS) $(CONFIG)
 
 $(TEST_SANITY_OBJS): CFLAGS += -Icrypto_kem/ml-kem-768/m4fspeed -Imupq/common
+
+# Custom test to find ideal glitch seed (Dilithium)
+FIND_SEED_C_SOURCES = \
+    find_seed.c \
+    crypto_sign/ml-dsa-44/m4fstack/packing.c \
+    crypto_sign/ml-dsa-44/m4fstack/poly.c \
+    crypto_sign/ml-dsa-44/m4fstack/polyvec.c \
+    crypto_sign/ml-dsa-44/m4fstack/rounding.c \
+    crypto_sign/ml-dsa-44/m4fstack/sign.c \
+    crypto_sign/ml-dsa-44/m4fstack/smallpoly.c \
+    crypto_sign/ml-dsa-44/m4fstack/stack.c \
+    crypto_sign/ml-dsa-44/m4fstack/symmetric-shake.c \
+    mupq/common/fips202.c \
+    common/hal-opencm3.c \
+    common/randombytes.c
+
+FIND_SEED_S_SOURCES = \
+    crypto_sign/ml-dsa-44/m4fstack/ntt.S \
+    crypto_sign/ml-dsa-44/m4fstack/smallntt_769.S \
+    crypto_sign/ml-dsa-44/m4fstack/pointwise_mont.s \
+    crypto_sign/ml-dsa-44/m4fstack/vector.s \
+    common/keccakf1600.S
+
+FIND_SEED_OBJS = $(call objs,$(FIND_SEED_C_SOURCES)) $(call objs,$(FIND_SEED_S_SOURCES))
+
+elf/find_seed.elf: $(FIND_SEED_OBJS) $(LINKDEPS) $(CONFIG)
+
+$(FIND_SEED_OBJS): CFLAGS += -Icrypto_sign/ml-dsa-44/m4fstack -Imupq/common
